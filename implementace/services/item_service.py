@@ -1,10 +1,10 @@
-"""Item management service with Strategy-pattern filtering.
+"""Služba pro správu exemplářů s filtrováním přes návrhový vzor Strategy.
 
-The **Strategy** design pattern is used here to allow the caller to inject
-different filtering algorithms (by category, availability, …) without the
-service needing to know the concrete filtering logic.  Adding a new filter
-requires only a new :class:`FilterStrategy` subclass – no changes to
-:class:`ItemService` are needed (Open/Closed Principle).
+Návrhový vzor **Strategy** zde umožňuje volajícímu předat různé algoritmy
+filtrování, například podle kategorie nebo dostupnosti, aniž by služba musela
+znát jejich konkrétní implementaci. Přidání nového filtru tak vyžaduje pouze
+novou podtřídu :class:`FilterStrategy`, bez změn ve třídě
+:class:`ItemService` (princip Open/Closed).
 """
 
 from __future__ import annotations
@@ -15,26 +15,26 @@ from models.entities import Category, Item
 from db.repositories import CategoryRepository, ItemRepository
 
 
-# ── Strategy interface and concrete strategies ────────────────────────────────
+# ── Rozhraní Strategy a konkrétní strategie ──────────────────────────────────
 
 
 class FilterStrategy(ABC):
-    """Abstract strategy for filtering a list of items (Strategy pattern)."""
+    """Abstraktní strategie pro filtrování seznamu exemplářů."""
 
     @abstractmethod
     def apply(self, items: list[Item]) -> list[Item]:
-        """Return the filtered subset of *items*."""
+        """Vrátí vyfiltrovanou podmnožinu zadaných *items*."""
         ...
 
     @property
     @abstractmethod
     def label(self) -> str:
-        """Human-readable description shown next to the filter indicator in the UI."""
+        """Text filtru zobrazovaný v uživatelském rozhraní."""
         ...
 
 
 class NoFilter(FilterStrategy):
-    """Passes all items through unchanged."""
+    """Propustí všechny exempláře beze změny."""
 
     def apply(self, items: list[Item]) -> list[Item]:
         return items
@@ -45,7 +45,7 @@ class NoFilter(FilterStrategy):
 
 
 class AvailableOnlyFilter(FilterStrategy):
-    """Keeps only items whose status is *Skladem*."""
+    """Ponechá pouze exempláře se stavem *Skladem*."""
 
     def apply(self, items: list[Item]) -> list[Item]:
         return [i for i in items if i.status == "Skladem"]
@@ -56,7 +56,7 @@ class AvailableOnlyFilter(FilterStrategy):
 
 
 class CategoryFilter(FilterStrategy):
-    """Keeps only items belonging to a specific category."""
+    """Ponechá pouze exempláře spadající do vybrané kategorie."""
 
     def __init__(self, category: Category) -> None:
         self._cat = category
@@ -69,11 +69,11 @@ class CategoryFilter(FilterStrategy):
         return f"Kategorie: {self._cat.name}"
 
 
-# ── Service ───────────────────────────────────────────────────────────────────
+# ── Služba ────────────────────────────────────────────────────────────────────
 
 
 class ItemService:
-    """Business logic for browsing and updating equipment items."""
+    """Aplikační logika pro prohlížení a úpravu exemplářů techniky."""
 
     def __init__(self, item_repo: ItemRepository, cat_repo: CategoryRepository) -> None:
         self._items = item_repo
@@ -84,7 +84,7 @@ class ItemService:
         strategy: FilterStrategy | None = None,
         include_retired: bool = False,
     ) -> list[Item]:
-        """Return items, optionally passed through a :class:`FilterStrategy`."""
+        """Vrátí exempláře, případně přefiltrované přes :class:`FilterStrategy`."""
         items = self._items.find_all(include_retired=include_retired)
         if strategy:
             items = strategy.apply(items)
@@ -97,5 +97,5 @@ class ItemService:
         return self._cats.find_all()
 
     def update_status_and_condition(self, item_id: int, status: str, condition: str) -> None:
-        """UC16 – persist a new status and condition for an item."""
+        """UC16 – uloží nový stav a kondici exempláře."""
         self._items.update_status_and_condition(item_id, status, condition)

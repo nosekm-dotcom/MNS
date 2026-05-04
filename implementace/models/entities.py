@@ -1,4 +1,4 @@
-"""Domain entity dataclasses for the Půjčovna školní techniky system."""
+"""Datové třídy doménových entit systému Půjčovna školní techniky."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Optional
 
 @dataclass
 class User:
-    """System user – either a student or an administrator."""
+    """Uživatel systému, tedy student nebo administrátor."""
 
     id: int
     username: str
@@ -21,7 +21,7 @@ class User:
 
 @dataclass
 class Category:
-    """Equipment category (e.g. Fotoaparát, Objektiv, Stativ)."""
+    """Kategorie techniky, například fotoaparát, objektiv nebo stativ."""
 
     id: int
     name: str
@@ -30,12 +30,12 @@ class Category:
 
 @dataclass
 class Item:
-    """A specific physical piece of equipment – an exemplář (inventory unit).
+    """Konkrétní fyzický kus techniky, tedy evidovaný exemplář.
 
-    Status lifecycle:
-        Skladem → Rezervováno → Vypůjčeno → Skladem (after return)
+    Životní cyklus stavu:
+        Skladem → Rezervováno → Vypůjčeno → Skladem (po vrácení)
         Skladem → V opravě → Skladem
-        * → Vyřazeno (terminal)
+        * → Vyřazeno (koncový stav)
     """
 
     id: int
@@ -44,14 +44,14 @@ class Item:
     manufacturer: str
     serial_number: str
     status: str       # 'Skladem' | 'Rezervováno' | 'Vypůjčeno' | 'V opravě' | 'Vyřazeno'
-    condition: str    # Free-text condition description
+    condition: str    # Slovní popis kondice exempláře
     notes: str
-    category_name: str = ""   # Denormalised for display; populated by repository JOIN
+    category_name: str = ""   # Denormalizováno pro zobrazení; doplní repository přes JOIN
 
 
 @dataclass
 class Reservation:
-    """A student's booking of an item for a future time window (UC06)."""
+    """Rezervace exempláře studentem pro budoucí časové období (UC06)."""
 
     id: int
     user_id: int
@@ -60,7 +60,7 @@ class Reservation:
     date_to: datetime
     status: str        # 'Aktivní' | 'Expirovaná' | 'Zrušená' | 'Převedena'
     created_at: datetime
-    # Denormalised display fields
+    # Denormalizovaná pole pro zobrazení
     user_name: str = ""
     item_name: str = ""
     item_serial: str = ""
@@ -68,10 +68,10 @@ class Reservation:
 
 @dataclass
 class Loan:
-    """An active or completed loan of a piece of equipment (UC14, UC15)."""
+    """Aktivní nebo již ukončená výpůjčka exempláře techniky (UC14, UC15)."""
 
     id: int
-    reservation_id: Optional[int]   # None when created directly by admin
+    reservation_id: Optional[int]   # None při přímém vytvoření administrátorem
     user_id: int
     item_id: int
     date_loaned: datetime
@@ -79,7 +79,7 @@ class Loan:
     date_returned: Optional[datetime]
     status: str   # 'Aktivní' | 'Ukončená'
     notes: str
-    # Denormalised display fields
+    # Denormalizovaná pole pro zobrazení
     user_name: str = ""
     item_name: str = ""
     item_serial: str = ""

@@ -1,4 +1,4 @@
-"""Console UI helpers – colours, tables, prompts and layout primitives."""
+"""Pomocné prvky konzolového rozhraní: barvy, tabulky, vstupy a rozvržení."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from datetime import datetime
 from typing import Any
 
 
-# ── ANSI colours ──────────────────────────────────────────────────────────────
+# ── ANSI barvy ────────────────────────────────────────────────────────────────
 
 
 class C:
-    """ANSI escape-code constants."""
+    """Konstanty s ANSI escape sekvencemi."""
 
     RESET   = "\033[0m"
     BOLD    = "\033[1m"
@@ -27,16 +27,16 @@ class C:
     WHITE   = "\033[97m"
 
     _STATUS: dict[str, str] = {
-        "Skladem":     "\033[92m",   # green
-        "Rezervováno": "\033[93m",   # yellow
-        "Vypůjčeno":   "\033[91m",   # red
-        "V opravě":    "\033[95m",   # magenta
-        "Vyřazeno":    "\033[2m",    # dim
+        "Skladem":     "\033[92m",   # zelená
+        "Rezervováno": "\033[93m",   # žlutá
+        "Vypůjčeno":   "\033[91m",   # červená
+        "V opravě":    "\033[95m",   # purpurová
+        "Vyřazeno":    "\033[2m",    # tlumená
     }
 
     @classmethod
     def status(cls, text: str) -> str:
-        """Wrap *text* in the colour associated with that item status."""
+        """Obalí *text* barvou odpovídající danému stavu exempláře."""
         colour = cls._STATUS.get(text, cls.RESET)
         return f"{colour}{text}{cls.RESET}"
 
@@ -65,11 +65,11 @@ class C:
         return f"{cls.CYAN}{text}{cls.RESET}"
 
 
-# ── Terminal geometry ─────────────────────────────────────────────────────────
+# ── Rozměry terminálu ─────────────────────────────────────────────────────────
 
 
 def term_width() -> int:
-    """Return current terminal column count (falls back to 80)."""
+    """Vrátí aktuální šířku terminálu ve sloupcích, případně 80."""
     return shutil.get_terminal_size((80, 24)).columns
 
 
@@ -77,16 +77,16 @@ def clear() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
-# ── Layout primitives ─────────────────────────────────────────────────────────
+# ── Prvky rozvržení ───────────────────────────────────────────────────────────
 
 
 def rule(char: str = "─", colour: str = C.DIM) -> None:
-    """Print a full-width horizontal rule."""
+    """Vytiskne vodorovnou linku přes celou šířku terminálu."""
     print(f"{colour}{char * term_width()}{C.RESET}")
 
 
 def header(title: str, subtitle: str = "") -> None:
-    """Clear the screen and print a prominent page header."""
+    """Vyčistí obrazovku a vykreslí výraznou hlavičku stránky."""
     clear()
     w = term_width()
     print(f"{C.BLUE}{C.BOLD}{'═' * w}{C.RESET}")
@@ -98,7 +98,7 @@ def header(title: str, subtitle: str = "") -> None:
 
 
 def section(title: str) -> None:
-    """Print a secondary section heading."""
+    """Vytiskne nadpis vedlejší sekce."""
     print(f"\n{C.CYAN}{C.BOLD}▸ {title}{C.RESET}")
     rule()
 
@@ -123,11 +123,11 @@ def blank() -> None:
     print()
 
 
-# ── Input helpers ─────────────────────────────────────────────────────────────
+# ── Pomocné funkce pro vstup ──────────────────────────────────────────────────
 
 
 def prompt(label: str, default: str = "") -> str:
-    """Display a styled prompt and return the stripped input (or *default*)."""
+    """Zobrazí stylizovaný dotaz a vrátí ořezaný vstup nebo *default*."""
     hint = f" [{default}]" if default else ""
     try:
         value = input(f"{C.CYAN}  ›  {label}{hint}: {C.RESET}").strip()
@@ -141,10 +141,10 @@ def prompt_int(
     valid: list[int] | None = None,
     allow_back: bool = True,
 ) -> int | None:
-    """Prompt for an integer, restricted to *valid* when given.
+    """Vyžádá celé číslo, případně omezené na hodnoty z *valid*.
 
-    Returns ``None`` when the user enters ``0`` (back/cancel) and
-    *allow_back* is ``True``.  Keeps looping on invalid input.
+    Pokud uživatel zadá ``0`` a *allow_back* je ``True``, vrátí ``None``.
+    Při neplatném vstupu se ptá opakovaně.
     """
     hint = "  (0 = zpět)" if allow_back else ""
     while True:
@@ -167,7 +167,7 @@ def prompt_int(
 
 
 def prompt_date(label: str) -> datetime:
-    """Keep asking until the user enters a date in YYYY-MM-DD format."""
+    """Ptá se tak dlouho, dokud uživatel nezadá datum ve formátu RRRR-MM-DD."""
     while True:
         raw = prompt(f"{label} (RRRR-MM-DD)")
         try:
@@ -177,26 +177,26 @@ def prompt_date(label: str) -> datetime:
 
 
 def pause() -> None:
-    """Wait for the user to press Enter before continuing."""
+    """Počká na stisknutí klávesy Enter před pokračováním."""
     input(f"\n{C.DIM}  Stiskněte Enter pro pokračování…{C.RESET}")
 
 
 def confirm(msg: str) -> bool:
-    """Return ``True`` when the user confirms with *a/ano/y/yes*."""
+    """Vrátí ``True``, pokud uživatel potvrdí odpovědí *a/ano/y/yes*."""
     raw = prompt(f"{msg} [a/N]").lower()
     return raw in ("a", "ano", "y", "yes")
 
 
-# ── Table renderer ────────────────────────────────────────────────────────────
+# ── Vykreslování tabulek ──────────────────────────────────────────────────────
 
 
 def _strip_ansi(s: str) -> str:
-    """Remove ANSI escape sequences so we can measure visible character width."""
+    """Odstraní ANSI sekvence, aby bylo možné měřit viditelnou šířku textu."""
     return re.sub(r"\033\[[0-9;]*m", "", s)
 
 
 def _vlen(s: str) -> int:
-    """Visible length of a string (ignores ANSI codes)."""
+    """Viditelná délka řetězce bez započítání ANSI kódů."""
     return len(_strip_ansi(s))
 
 
@@ -205,11 +205,10 @@ def table(
     rows: list[list[Any]],
     col_widths: list[int] | None = None,
 ) -> None:
-    """Render a Unicode box-drawing table to stdout.
+    """Vykreslí do standardního výstupu tabulku pomocí Unicode rámečků.
 
-    *col_widths* is optional; when omitted the widths are computed from the
-    content.  If the total width exceeds the terminal, the widest column is
-    trimmed to fit.
+    Parametr *col_widths* je volitelný; pokud chybí, šířky se dopočítají podle
+    obsahu. Pokud celková šířka přesáhne terminál, nejširší sloupec se zkrátí.
     """
     if not rows:
         info("(žádné záznamy)")
@@ -223,7 +222,7 @@ def table(
             for i, col in enumerate(columns)
         ]
 
-    # Clamp to terminal width
+    # Omezí tabulku na šířku terminálu.
     total = sum(cw + 3 for cw in col_widths) + 1
     tw = term_width()
     if total > tw:
@@ -238,7 +237,7 @@ def table(
         parts = []
         for cell, cw in zip(cells, col_widths):
             vl = _vlen(cell)
-            # Truncate if needed (rare – only when terminal is very narrow)
+            # Text zkrátí jen v případě potřeby, typicky u velmi úzkého terminálu.
             visible = _strip_ansi(cell)
             if len(visible) > cw:
                 cell = cell[: cw - 1] + "…"

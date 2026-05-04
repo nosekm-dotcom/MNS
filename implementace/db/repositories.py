@@ -1,9 +1,9 @@
-"""Data-access layer – Repository pattern.
+"""Vrstva přístupu k datům využívající návrhový vzor Repository.
 
-Each repository encapsulates all SQL queries for one aggregate root, so
-the rest of the application never touches raw SQL.  The pattern makes it
-trivial to swap the storage backend (e.g. replace SQLite with PostgreSQL)
-without touching service or UI code.
+Každé repository zapouzdřuje všechny SQL dotazy pro jednu agregovanou
+entitu, takže zbytek aplikace nikdy nepracuje přímo s SQL. Díky tomu lze
+snadno vyměnit úložiště, například SQLite za PostgreSQL, bez zásahu do
+servisní nebo prezentační vrstvy.
 """
 
 from __future__ import annotations
@@ -17,15 +17,15 @@ from db.database import Database
 
 
 def _dt(value: str | None) -> Optional[datetime]:
-    """Parse an ISO-8601 string to datetime; return None for NULL."""
+    """Převede řetězec ISO-8601 na `datetime`; pro `NULL` vrací `None`."""
     return datetime.fromisoformat(value) if value else None
 
 
-# ── Base ──────────────────────────────────────────────────────────────────────
+# ── Základ ────────────────────────────────────────────────────────────────────
 
 
 class _Repo:
-    """Thin base that gives subclasses easy access to the connection."""
+    """Lehký základ poskytující potomkům pohodlný přístup ke spojení."""
 
     def __init__(self, db: Database) -> None:
         self._db = db
@@ -35,14 +35,14 @@ class _Repo:
         return self._db.connection()
 
 
-# ── User ──────────────────────────────────────────────────────────────────────
+# ── Uživatel ──────────────────────────────────────────────────────────────────
 
 
 class UserRepository(_Repo):
-    """Repository for :class:`~models.entities.User` persistence."""
+    """Repository pro perzistenci entity :class:`~models.entities.User`."""
 
     def find_by_username(self, username: str) -> Optional[User]:
-        """Return the user with *username*, or ``None`` if not found."""
+        """Vrátí uživatele se zadaným *username*, nebo ``None`` pokud neexistuje."""
         row = self._conn.execute(
             "SELECT * FROM users WHERE username = ?", (username,)
         ).fetchone()
@@ -72,11 +72,11 @@ class UserRepository(_Repo):
         )
 
 
-# ── Category ──────────────────────────────────────────────────────────────────
+# ── Kategorie ────────────────────────────────────────────────────────────────
 
 
 class CategoryRepository(_Repo):
-    """Repository for :class:`~models.entities.Category` persistence."""
+    """Repository pro perzistenci entity :class:`~models.entities.Category`."""
 
     def find_all(self) -> list[Category]:
         rows = self._conn.execute(
@@ -91,7 +91,7 @@ class CategoryRepository(_Repo):
         return Category(id=row["id"], name=row["name"], description=row["description"]) if row else None
 
 
-# ── Item ──────────────────────────────────────────────────────────────────────
+# ── Exemplář ──────────────────────────────────────────────────────────────────
 
 _ITEM_SELECT = """
     SELECT i.*, c.name AS category_name
@@ -101,10 +101,10 @@ _ITEM_SELECT = """
 
 
 class ItemRepository(_Repo):
-    """Repository for :class:`~models.entities.Item` persistence."""
+    """Repository pro perzistenci entity :class:`~models.entities.Item`."""
 
     def find_all(self, include_retired: bool = False) -> list[Item]:
-        """Return all items, optionally excluding retired ones."""
+        """Vrátí všechny exempláře, případně bez vyřazených."""
         where = "" if include_retired else " WHERE i.status != 'Vyřazeno'"
         rows = self._conn.execute(
             f"{_ITEM_SELECT}{where} ORDER BY c.name, i.name"
@@ -118,14 +118,14 @@ class ItemRepository(_Repo):
         return self._map(row) if row else None
 
     def update_status(self, item_id: int, status: str) -> None:
-        """Change only the status field of an item."""
+        """Změní pouze stav zadaného exempláře."""
         self._conn.execute(
             "UPDATE items SET status = ? WHERE id = ?", (status, item_id)
         )
         self._conn.commit()
 
     def update_status_and_condition(self, item_id: int, status: str, condition: str) -> None:
-        """UC16 – update both status and condition (after return or admin review)."""
+        """UC16 – aktualizuje současně stav i kondici exempláře."""
         self._conn.execute(
             "UPDATE items SET status = ?, condition = ? WHERE id = ?",
             (status, condition, item_id),
@@ -147,7 +147,7 @@ class ItemRepository(_Repo):
         )
 
 
-# ── Reservation ───────────────────────────────────────────────────────────────
+# ── Rezervace ─────────────────────────────────────────────────────────────────
 
 _RES_SELECT = """
     SELECT r.*,
@@ -161,7 +161,7 @@ _RES_SELECT = """
 
 
 class ReservationRepository(_Repo):
-    """Repository for :class:`~models.entities.Reservation` persistence."""
+    """Repository pro perzistenci entity :class:`~models.entities.Reservation`."""
 
     def create(
         self,
@@ -170,7 +170,7 @@ class ReservationRepository(_Repo):
         date_from: datetime,
         date_to: datetime,
     ) -> Reservation:
-        """Insert a new *Aktivní* reservation and return the persisted object."""
+        """Vloží novou *Aktivní* rezervaci a vrátí uložený objekt."""
         now = datetime.now().isoformat()
         cur = self._conn.execute(
             """INSERT INTO reservations (user_id, item_id, date_from, date_to, status, created_at)
@@ -200,7 +200,7 @@ class ReservationRepository(_Repo):
         return [self._map(r) for r in rows]
 
     def find_expired_candidates(self, cutoff: datetime) -> list[Reservation]:
-        """Return active reservations whose pickup window has passed *cutoff* (UC09)."""
+        """Vrátí aktivní rezervace, kterým do okamžiku *cutoff* vypršelo vyzvednutí."""
         rows = self._conn.execute(
             f"{_RES_SELECT} WHERE r.status = 'Aktivní' AND r.date_from < ?",
             (cutoff.isoformat(),),
@@ -229,7 +229,7 @@ class ReservationRepository(_Repo):
         )
 
 
-# ── Loan ──────────────────────────────────────────────────────────────────────
+# ── Výpůjčka ──────────────────────────────────────────────────────────────────
 
 _LOAN_SELECT = """
     SELECT l.*,
@@ -243,7 +243,7 @@ _LOAN_SELECT = """
 
 
 class LoanRepository(_Repo):
-    """Repository for :class:`~models.entities.Loan` persistence."""
+    """Repository pro perzistenci entity :class:`~models.entities.Loan`."""
 
     def create(
         self,
@@ -253,7 +253,7 @@ class LoanRepository(_Repo):
         reservation_id: Optional[int] = None,
         notes: str = "",
     ) -> Loan:
-        """Insert a new *Aktivní* loan and return the persisted object."""
+        """Vloží novou *Aktivní* výpůjčku a vrátí uložený objekt."""
         now = datetime.now().isoformat()
         cur = self._conn.execute(
             """INSERT INTO loans
@@ -283,7 +283,7 @@ class LoanRepository(_Repo):
         return self._map(row) if row else None
 
     def close_loan(self, loan_id: int) -> None:
-        """Mark a loan as *Ukončená* and record the return timestamp."""
+        """Označí výpůjčku jako *Ukončená* a uloží čas vrácení."""
         now = datetime.now().isoformat()
         self._conn.execute(
             "UPDATE loans SET status = 'Ukončená', date_returned = ? WHERE id = ?",

@@ -1,4 +1,4 @@
-"""Administrator menu commands – UC09, UC14, UC15, UC16."""
+"""Příkazy administrátorského menu – UC09, UC14, UC15 a UC16."""
 
 from __future__ import annotations
 
@@ -12,15 +12,15 @@ from db.repositories import UserRepository
 from ui import console as con
 from ui.commands import BackCommand, Command, Menu
 
-# Allowed item statuses for admin selection
+# Povolené stavy exempláře při výběru administrátorem.
 _STATUSES = ["Skladem", "Rezervováno", "Vypůjčeno", "V opravě", "Vyřazeno"]
 
 
-# ── Active reservations ───────────────────────────────────────────────────────
+# ── Aktivní rezervace ─────────────────────────────────────────────────────────
 
 
 class ListReservationsCommand(Command):
-    """Display all currently active reservations."""
+    """Zobrazí všechny aktuálně aktivní rezervace."""
 
     def __init__(self, res_svc: ReservationService) -> None:
         self._res = res_svc
@@ -58,11 +58,11 @@ class ListReservationsCommand(Command):
         return True
 
 
-# ── UC14 – Create loan ────────────────────────────────────────────────────────
+# ── UC14 – Vytvoření výpůjčky ────────────────────────────────────────────────
 
 
 class CreateLoanCommand(Command):
-    """UC14 – Create a new loan, either from an existing reservation or directly."""
+    """UC14 – vytvoří novou výpůjčku z rezervace nebo přímo bez ní."""
 
     def __init__(
         self,
@@ -94,10 +94,10 @@ class CreateLoanCommand(Command):
             self._direct()
         return True
 
-    # ── private helpers ───────────────────────────────────────────────────────
+    # ── Privátní pomocné metody ──────────────────────────────────────────────
 
     def _from_reservation(self) -> None:
-        """Convert an active reservation into a loan."""
+        """Převede aktivní rezervaci na výpůjčku."""
         reservations = self._res.get_all_active()
         if not reservations:
             con.warning("Žádné aktivní rezervace k převodu na výpůjčku.")
@@ -138,7 +138,7 @@ class CreateLoanCommand(Command):
         con.pause()
 
     def _direct(self) -> None:
-        """Create a loan without a prior reservation."""
+        """Vytvoří výpůjčku bez předchozí rezervace."""
         available = [it for it in self._items.get_items() if it.status == "Skladem"]
         if not available:
             con.warning("Žádný exemplář momentálně ve stavu Skladem.")
@@ -182,11 +182,11 @@ class CreateLoanCommand(Command):
         con.pause()
 
 
-# ── UC15 + UC16 – Return loan ─────────────────────────────────────────────────
+# ── UC15 + UC16 – Vrácení výpůjčky ───────────────────────────────────────────
 
 
 class ReturnLoanCommand(Command):
-    """UC15 – Record the return of a loan; includes UC16 (update item condition)."""
+    """UC15 – zaeviduje vrácení výpůjčky; zahrnuje i UC16."""
 
     def __init__(self, loan_svc: LoanService) -> None:
         self._loans = loan_svc
@@ -231,7 +231,7 @@ class ReturnLoanCommand(Command):
         con.info(f"Student: {loan.user_name}")
         con.blank()
 
-        # UC16 – inline: update status and condition
+        # UC16 je zde součástí toku vrácení: aktualizace stavu a kondice.
         con.section("Aktualizace stavu exempláře  –  UC16")
         for i, s in enumerate(_STATUSES, 1):
             print(f"  {con.C.CYAN}{i}.{con.C.RESET}  {con.C.status(s)}")
@@ -258,11 +258,11 @@ class ReturnLoanCommand(Command):
         return True
 
 
-# ── UC16 – standalone item update ─────────────────────────────────────────────
+# ── UC16 – Samostatná úprava exempláře ───────────────────────────────────────
 
 
 class UpdateItemCommand(Command):
-    """UC16 – Update the status and condition of any item (admin standalone action)."""
+    """UC16 – aktualizuje stav a kondici libovolného exempláře samostatně."""
 
     def __init__(self, item_svc: ItemService) -> None:
         self._items = item_svc
@@ -316,14 +316,14 @@ class UpdateItemCommand(Command):
         return True
 
 
-# ── UC09 – Manual expiration trigger ─────────────────────────────────────────
+# ── UC09 – Ruční spuštění expirace ───────────────────────────────────────────
 
 
 class ExpireReservationsCommand(Command):
-    """UC09 – Run the reservation-expiration check on demand.
+    """UC09 – spustí kontrolu expirace rezervací na vyžádání.
 
-    In production this would be triggered automatically by a scheduler.
-    The admin can also run it manually from this menu.
+    V produkčním prostředí by se tato kontrola typicky spouštěla plánovačem.
+    Administrátor ji ale může spustit i ručně z tohoto menu.
     """
 
     def __init__(self, res_svc: ReservationService) -> None:
@@ -351,11 +351,11 @@ class ExpireReservationsCommand(Command):
         return True
 
 
-# ── Active loans overview ─────────────────────────────────────────────────────
+# ── Přehled aktivních výpůjček ───────────────────────────────────────────────
 
 
 class ListLoansCommand(Command):
-    """Display all currently active loans."""
+    """Zobrazí všechny aktuálně aktivní výpůjčky."""
 
     def __init__(self, loan_svc: LoanService) -> None:
         self._loans = loan_svc
@@ -377,7 +377,7 @@ class ListLoansCommand(Command):
                 due = l.date_due.date()
                 due_str = l.date_due.strftime("%Y-%m-%d")
                 if due < today:
-                    due_str = con.C.err(due_str + " !")   # overdue highlight
+                    due_str = con.C.err(due_str + " !")   # zvýraznění po splatnosti
                 rows.append([
                     str(l.id), l.user_name, l.item_name, l.item_serial,
                     l.date_loaned.strftime("%Y-%m-%d"), due_str,
@@ -392,7 +392,7 @@ class ListLoansCommand(Command):
         return True
 
 
-# ── Factory function ──────────────────────────────────────────────────────────
+# ── Tovární funkce ────────────────────────────────────────────────────────────
 
 
 def build_admin_menu(
@@ -402,7 +402,7 @@ def build_admin_menu(
     loan_svc: LoanService,
     user_repo: UserRepository,
 ) -> Menu:
-    """Assemble and return the administrator main menu."""
+    """Sestaví a vrátí hlavní menu administrátora."""
     menu = Menu(
         "Půjčovna školní techniky  –  Administrace",
         f"Přihlášen jako: {user.full_name}  ({user.role})",

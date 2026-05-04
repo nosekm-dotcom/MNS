@@ -1,4 +1,4 @@
-"""Student-facing menu commands – UC04 (browse inventory) and UC06 (reserve)."""
+"""Příkazy studentského menu – UC04 (prohlížení inventáře) a UC06 (rezervace)."""
 
 from __future__ import annotations
 
@@ -21,10 +21,10 @@ from ui.commands import BackCommand, Command, Menu
 
 
 class InventoryCommand(Command):
-    """UC04 – Display the equipment inventory with optional category filtering.
+    """UC04 – zobrazí inventář techniky s volitelným filtrováním podle kategorií.
 
-    The command embeds an inline sub-menu that lets the student apply a
-    :class:`FilterStrategy` (Strategy pattern) and optionally jump to UC06.
+    Příkaz obsahuje vnořené podmenu, ve kterém může student použít
+    :class:`FilterStrategy` a případně plynule přejít do UC06.
     """
 
     def __init__(self, item_svc: ItemService, res_svc: ReservationService, user: User) -> None:
@@ -40,10 +40,10 @@ class InventoryCommand(Command):
         self._show(NoFilter())
         return True
 
-    # ── private helpers ───────────────────────────────────────────────────────
+    # ── Privátní pomocné metody ──────────────────────────────────────────────
 
     def _show(self, strategy: FilterStrategy) -> None:
-        """Render the item table and show the action sub-menu."""
+        """Vykreslí tabulku exemplářů a zobrazí podmenu dostupných akcí."""
         con.header("Inventář techniky", f"Filtr: {strategy.label}")
 
         items = self._items.get_items(strategy)
@@ -71,7 +71,7 @@ class InventoryCommand(Command):
             self._show(NoFilter())
         elif choice == 4:
             self._reserve_flow(items)
-        # 0 / None → back
+        # 0 / None znamená návrat zpět.
 
     def _render_table(self, items: list[Item]) -> None:
         rows = [
@@ -112,7 +112,7 @@ class InventoryCommand(Command):
         self._show(CategoryFilter(selected))
 
     def _reserve_flow(self, visible_items: list[Item]) -> None:
-        """UC06 – guide the student through creating a reservation."""
+        """UC06 – provede studenta vytvořením nové rezervace."""
         available = [it for it in visible_items if it.status == "Skladem"]
         if not available:
             con.warning(
@@ -175,11 +175,11 @@ class InventoryCommand(Command):
         con.pause()
 
 
-# ── My reservations ───────────────────────────────────────────────────────────
+# ── Moje rezervace ────────────────────────────────────────────────────────────
 
 
 class MyReservationsCommand(Command):
-    """Display and optionally cancel the student's active reservations."""
+    """Zobrazí studentovy aktivní rezervace a případně umožní jejich zrušení."""
 
     def __init__(self, res_svc: ReservationService, user: User) -> None:
         self._res  = res_svc
@@ -229,7 +229,7 @@ class MyReservationsCommand(Command):
         return True
 
 
-# ── Factory function ──────────────────────────────────────────────────────────
+# ── Tovární funkce ────────────────────────────────────────────────────────────
 
 
 def build_student_menu(
@@ -237,7 +237,7 @@ def build_student_menu(
     item_svc: ItemService,
     res_svc: ReservationService,
 ) -> Menu:
-    """Assemble and return the student main menu."""
+    """Sestaví a vrátí hlavní menu pro studenta."""
     menu = Menu(
         "Půjčovna školní techniky",
         f"Přihlášen jako: {user.full_name}  ({user.role})",

@@ -1,4 +1,4 @@
-"""Authentication service – login and credential verification."""
+"""Služba pro autentizaci, přihlášení a ověření přihlašovacích údajů."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ from utils import hash_password
 
 
 class AuthService:
-    """Handles user authentication against stored password hashes."""
+    """Zajišťuje ověření uživatele vůči uloženým hashům hesel."""
 
     def __init__(self, user_repo: UserRepository) -> None:
         self._repo = user_repo
 
     def login(self, username: str, password: str) -> Optional[User]:
-        """Return the :class:`User` if credentials are valid, otherwise ``None``."""
+        """Vrátí :class:`User`, pokud jsou údaje platné, jinak ``None``."""
         user = self._repo.find_by_username(username.strip())
         if user is None:
             return None

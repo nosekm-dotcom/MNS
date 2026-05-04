@@ -1,4 +1,4 @@
-"""SQLite database connection, schema initialisation, and demo-data seeding."""
+"""Připojení k SQLite, inicializace schématu a naplnění ukázkovými daty."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from utils import hash_password
 
-# Database file lives next to the implementace/ directory in a data/ folder
+# Soubor databáze je uložen vedle adresáře implementace ve složce data/.
 DB_PATH = Path(__file__).parent.parent / "data" / "pujcovna.db"
 
 _SCHEMA = """
@@ -66,12 +66,12 @@ CREATE TABLE IF NOT EXISTS loans (
 
 
 class Database:
-    """Manages the SQLite connection lifecycle.
+    """Spravuje životní cyklus připojení k SQLite databázi.
 
-    Usage::
+    Použití::
 
         db = Database()
-        db.connect()          # opens / creates the file, runs migrations
+        db.connect()          # otevře nebo vytvoří soubor a připraví schéma
         ...
         db.close()
     """
@@ -80,10 +80,10 @@ class Database:
         self._path = path
         self._conn: sqlite3.Connection | None = None
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    # ── Veřejné rozhraní ─────────────────────────────────────────────────────
 
     def connect(self) -> None:
-        """Open the database, ensure the schema exists, seed demo data on first run."""
+        """Otevře databázi, zajistí existenci schématu a při prvním spuštění vloží demo data."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
         is_new = not self._path.exists()
         self._conn = sqlite3.connect(str(self._path))
@@ -95,25 +95,25 @@ class Database:
             self._seed()
 
     def connection(self) -> sqlite3.Connection:
-        """Return the active connection (raises if not yet connected)."""
+        """Vrátí aktivní spojení, nebo vyhodí chybu, pokud ještě není připojeno."""
         if self._conn is None:
             raise RuntimeError("Databáze není připojena – zavolejte nejprve connect().")
         return self._conn
 
     def close(self) -> None:
-        """Close the connection gracefully."""
+        """Korektně uzavře databázové spojení."""
         if self._conn:
             self._conn.close()
             self._conn = None
 
-    # ── Private helpers ───────────────────────────────────────────────────────
+    # ── Privátní pomocné metody ──────────────────────────────────────────────
 
     def _seed(self) -> None:
-        """Populate the fresh database with demo users, categories and items."""
+        """Naplní novou databázi ukázkovými uživateli, kategoriemi a exempláři."""
         conn = self._conn
         now = datetime.now()
 
-        # Users
+        # Uživatelé
         conn.executemany(
             "INSERT INTO users (username, full_name, email, role, password_hash) VALUES (?,?,?,?,?)",
             [
@@ -123,7 +123,7 @@ class Database:
             ],
         )
 
-        # Categories
+        # Kategorie
         conn.executemany(
             "INSERT INTO categories (name, description) VALUES (?,?)",
             [
@@ -135,7 +135,7 @@ class Database:
             ],
         )
 
-        # Items (category IDs match insertion order above: 1–5)
+        # Exempláře; ID kategorií odpovídají pořadí vložení výše: 1 až 5.
         conn.executemany(
             """INSERT INTO items (category_id, name, manufacturer, serial_number, status, condition)
                VALUES (?,?,?,?,?,?)""",
@@ -153,7 +153,7 @@ class Database:
             ],
         )
 
-        # Demo reservation: jnovak reserved Canon RF for next week
+        # Ukázková rezervace: jnovak má na příští týden rezervovaný Canon RF.
         tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
         next_week = (now + timedelta(days=7)).strftime("%Y-%m-%d")
         conn.execute(
@@ -163,7 +163,7 @@ class Database:
         )
         conn.execute("UPDATE items SET status='Rezervováno' WHERE id=5")
 
-        # Demo loan: kprocko has the GorillaPod on loan
+        # Ukázková výpůjčka: kprocko má aktuálně vypůjčený GorillaPod.
         conn.execute(
             """INSERT INTO loans (user_id, item_id, date_loaned, date_due, status)
                VALUES (3, 7, ?, ?, 'Aktivní')""",

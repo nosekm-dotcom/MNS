@@ -1,4 +1,4 @@
-"""Loan business logic – UC14 (create loan) and UC15 (return loan / UC16)."""
+"""Aplikační logika výpůjček – UC14 (vytvoření) a UC15 (vrácení / UC16)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from db.repositories import ItemRepository, LoanRepository, ReservationRepositor
 
 
 class LoanService:
-    """Manages the full lifecycle of equipment loans."""
+    """Spravuje celý životní cyklus výpůjček techniky."""
 
     def __init__(
         self,
@@ -22,7 +22,7 @@ class LoanService:
         self._items = item_repo
         self._res = res_repo
 
-    # ── UC14 – Create loan ────────────────────────────────────────────────────
+    # ── UC14 – Vytvoření výpůjčky ─────────────────────────────────────────────
 
     def create_loan(
         self,
@@ -31,20 +31,20 @@ class LoanService:
         date_due: datetime,
         reservation_id: Optional[int] = None,
     ) -> Loan:
-        """Create a new loan, mark the item as *Vypůjčeno*, close any linked reservation."""
+        """Vytvoří novou výpůjčku, označí exemplář jako *Vypůjčeno* a uzavře navázanou rezervaci."""
         loan = self._loans.create(user_id, item_id, date_due, reservation_id)
         self._items.update_status(item_id, "Vypůjčeno")
         if reservation_id is not None:
             self._res.update_status(reservation_id, "Převedena")
         return loan
 
-    # ── UC15 + UC16 – Return loan ─────────────────────────────────────────────
+    # ── UC15 + UC16 – Vrácení výpůjčky ────────────────────────────────────────
 
     def return_loan(self, loan_id: int, new_status: str, new_condition: str) -> None:
-        """Close a loan and update the item's status and condition.
+        """Uzavře výpůjčku a aktualizuje stav i kondici exempláře.
 
-        Implements **UC15** (record return) which includes **UC16** (update
-        item status and condition) as a mandatory included use case.
+        Implementuje **UC15** (evidence vrácení), jehož povinnou součástí je
+        také **UC16** (aktualizace stavu a kondice exempláře).
         """
         loan = self._loans.find_by_id(loan_id)
         if loan is None:
@@ -52,7 +52,7 @@ class LoanService:
         self._loans.close_loan(loan_id)
         self._items.update_status_and_condition(loan.item_id, new_status, new_condition)
 
-    # ── Queries ───────────────────────────────────────────────────────────────
+    # ── Dotazy ────────────────────────────────────────────────────────────────
 
     def get_active_loans(self) -> list[Loan]:
         return self._loans.find_active_loans()

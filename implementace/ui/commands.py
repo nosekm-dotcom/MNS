@@ -1,12 +1,12 @@
-"""Command pattern for console menu actions.
+"""Implementace návrhového vzoru Command pro akce konzolového menu.
 
-The **Command** design pattern encapsulates each menu action as an object
-with a uniform ``execute()`` interface.  The :class:`Menu` class acts as the
-*Invoker* – it renders the numbered list and calls ``execute()`` on the
-selected command without knowing anything about the action's implementation.
+Návrhový vzor **Command** zapouzdřuje každou akci menu jako objekt se
+sjednoceným rozhraním ``execute()``. Třída :class:`Menu` zde vystupuje jako
+*Invoker* – vykreslí očíslovaný seznam a zavolá ``execute()`` na vybraném
+příkazu, aniž by znala detaily jeho implementace.
 
-Adding a new feature requires only a new :class:`Command` subclass; the menu
-itself and the rest of the application are untouched (Open/Closed Principle).
+Přidání nové funkce tak vyžaduje pouze novou podtřídu :class:`Command`;
+samotné menu ani zbytek aplikace není nutné měnit (princip Open/Closed).
 """
 
 from __future__ import annotations
@@ -16,32 +16,32 @@ from abc import ABC, abstractmethod
 from ui import console as con
 
 
-# ── Command interface ─────────────────────────────────────────────────────────
+# ── Rozhraní Command ──────────────────────────────────────────────────────────
 
 
 class Command(ABC):
-    """Abstract base for all menu commands (Command pattern – *ConcreteCommand* role)."""
+    """Abstraktní základ pro všechny příkazy menu."""
 
     @property
     @abstractmethod
     def label(self) -> str:
-        """Short text shown next to the menu entry number."""
+        """Krátký text zobrazený vedle čísla položky menu."""
         ...
 
     @abstractmethod
     def execute(self) -> bool:
-        """Perform the action.
+        """Provede akci.
 
-        Return ``True`` to stay in the current menu, ``False`` to exit/go back.
+        Vrátí ``True`` pro setrvání v aktuálním menu, ``False`` pro návrat zpět.
         """
         ...
 
 
-# ── Built-in commands ─────────────────────────────────────────────────────────
+# ── Vestavěné příkazy ─────────────────────────────────────────────────────────
 
 
 class BackCommand(Command):
-    """A command that simply signals the menu to exit its loop."""
+    """Příkaz, který pouze signalizuje ukončení aktuální smyčky menu."""
 
     def __init__(self, label: str = "Zpět") -> None:
         self._label = label
@@ -58,11 +58,11 @@ class BackCommand(Command):
 
 
 class Menu:
-    """Renders a numbered list of :class:`Command` objects and dispatches selection.
+    """Vykreslí číslovaný seznam objektů :class:`Command` a odbaví volbu uživatele.
 
-    This is the *Invoker* in the Command pattern.  It never knows the concrete
-    type of the commands it holds – it only calls ``execute()`` and reacts to
-    the boolean return value.
+    V rámci vzoru Command jde o roli *Invoker*. Nikdy nepotřebuje znát
+    konkrétní typ uložených příkazů; pouze volá ``execute()`` a reaguje na
+    vrácenou booleovskou hodnotu.
     """
 
     def __init__(self, title: str, subtitle: str = "") -> None:
@@ -71,16 +71,16 @@ class Menu:
         self._commands: list[Command] = []
 
     def add(self, command: Command) -> "Menu":
-        """Register a command and return *self* for chaining."""
+        """Zaregistruje příkaz a vrátí *self* pro řetězení volání."""
         self._commands.append(command)
         return self
 
     def run(self) -> None:
-        """Display the menu in a loop until a command returns ``False``."""
+        """Zobrazuje menu ve smyčce, dokud některý příkaz nevrátí ``False``."""
         while True:
             con.header(self._title, self._subtitle)
             for i, cmd in enumerate(self._commands, 1):
-                # Highlight the last entry (usually Back/Logout) in dim
+                # Poslední položku, typicky Zpět nebo Odhlásit, zvýrazní méně nápadně.
                 colour = con.C.DIM if i == len(self._commands) else ""
                 print(f"  {con.C.CYAN}{i:2}.{con.C.RESET}  {colour}{cmd.label}{con.C.RESET}")
             con.blank()

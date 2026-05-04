@@ -1,4 +1,4 @@
-"""Půjčovna školní techniky – entry point.
+"""Půjčovna školní techniky – vstupní bod aplikace.
 
 Spuštění::
 
@@ -15,7 +15,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-# Ensure imports work regardless of working directory
+# Zajistí funkční importy bez ohledu na aktuální pracovní adresář.
 sys.path.insert(0, str(Path(__file__).parent))
 
 from db.database import Database
@@ -35,11 +35,11 @@ from ui.admin_menu import build_admin_menu
 from ui.student_menu import build_student_menu
 
 
-# ── Login screen ──────────────────────────────────────────────────────────────
+# ── Přihlašovací obrazovka ────────────────────────────────────────────────────
 
 
 def _login(auth_svc: AuthService):
-    """Render the login form and return an authenticated User (loops on failure)."""
+    """Vykreslí přihlašovací formulář a vrátí ověřeného uživatele."""
     while True:
         con.header(
             "Půjčovna školní techniky",
@@ -63,11 +63,11 @@ def _login(auth_svc: AuthService):
         con.pause()
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Hlavní běh ────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
-    # --- Wiring (Poor-Man's DI) ---
+    # --- Sestavení závislostí (jednoduchá ruční DI) ---
     db = Database()
     db.connect()
 
@@ -82,7 +82,7 @@ def main() -> None:
     res_svc  = ReservationService(res_repo, item_repo)
     loan_svc = LoanService(loan_repo, item_repo, res_repo)
 
-    # Run expiration check on startup (UC09)
+    # Při startu zkontroluje a expiruje staré rezervace (UC09).
     expired = res_svc.expire_old_reservations()
     if expired:
         print(f"[systém] Automaticky expirováno {expired} rezervaci/í při startu.")

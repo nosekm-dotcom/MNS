@@ -46,7 +46,7 @@ class Item:
     status: str       # 'Skladem' | 'Rezervováno' | 'Vypůjčeno' | 'V opravě' | 'Vyřazeno'
     condition: str    # Slovní popis kondice exempláře
     notes: str
-    category_name: str = ""   # Denormalizováno pro zobrazení; doplní repository přes JOIN
+    category_name: str = ""   # Doplní repository přes JOIN
 
 
 @dataclass
@@ -60,7 +60,6 @@ class Reservation:
     date_to: datetime
     status: str        # 'Aktivní' | 'Expirovaná' | 'Zrušená' | 'Převedena'
     created_at: datetime
-    # Denormalizovaná pole pro zobrazení
     user_name: str = ""
     item_name: str = ""
     item_serial: str = ""
@@ -79,7 +78,6 @@ class Loan:
     date_returned: Optional[datetime]
     status: str   # 'Aktivní' | 'Ukončená'
     notes: str
-    # Denormalizovaná pole pro zobrazení
     user_name: str = ""
     item_name: str = ""
     item_serial: str = ""
